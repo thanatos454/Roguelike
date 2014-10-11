@@ -41,3 +41,14 @@ Icon
 Network Trash Folder
 Temporary Items
 .apdisk
+
+Roguelike/Release/link-rc.read.1.tlog
+*.tlog
+*.obj
+*.log
+*.lastbuildstate
+*.idb
+*.pdb
+*.sdf
+*.opensdf
+*.exe
