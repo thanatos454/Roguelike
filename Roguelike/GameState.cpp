@@ -1,25 +1,28 @@
 #include "GameState.h"
-#include "StateManager.h"
-
 #include <SFML/Graphics.hpp>
 
-static sf::Font font;
-static sf::Text msg;
 
-GameState::GameState( sf::RenderWindow& window ) : State(window, "GameState")
+#include "StateManager.h"
+#include "Map.h"
+#include "MapGenerator.h"
+
+#define TILE_SIZE 16
+#define TILES_WIDTH 80
+#define TILES_HEIGH 40
+
+
+GameState::GameState( sf::RenderWindow& window ) : State(window, "GameState"), m_mapGen(new MapGenerator(TILES_WIDTH,TILES_HEIGH,150,75,25,30))
 {
-	font.loadFromFile("arial.ttf");//no error checking here
-	msg.setFont(font);
-	msg.setString("You are having the time of your life...  \nHit <i> to toggle your inventory.");
-	msg.setColor(sf::Color::Red);
 
-	msg.setOrigin( msg.getGlobalBounds().width/2, msg.getGlobalBounds().height/2 );
-	msg.setPosition( window.getSize().x/2.0f, window.getSize().y/2.0f );
+	m_map = m_mapGen->generateMap();
+	m_map->LoadSFTiles(TILE_SIZE);
 }
 
 
 GameState::~GameState(void)
 {
+	delete m_map;
+	delete m_mapGen;
 }
 
 
@@ -31,13 +34,27 @@ void GameState::HandleInput(const sf::Event& e)
 		unsigned int id = m_manager->GetStateByName("InventoryMenu");
 		m_manager->QueueStateChange( StateManager::ChangeType::Push, id );
 	}
+
+	if( (e.type == sf::Event::MouseButtonPressed) &&
+	(e.mouseButton.button == sf::Mouse::Right) )
+	{
+		delete m_map;
+		m_map = m_mapGen->generateMap();
+		m_map->LoadSFTiles(TILE_SIZE);
+	}
 }
 void GameState::Update(float dTime)
 {
 }
 void GameState::Render(void)
 {
-        m_window.draw(msg);
+	for(int x = 0; x < TILES_WIDTH; x++)
+	{
+		for(int y = 0; y < TILES_HEIGH; y++)
+		{
+			m_window.draw(m_map->GetSFTile(x, y));
+		}
+	}
 }
 
 void GameState::Pause(void)

@@ -1,15 +1,10 @@
 #include <SFML/Graphics.hpp>
-#include "Map.h"
-#include "MapGenerator.h"
+
 
 #include "StateManager.h"
 #include "TitleState.h"
 #include "GameState.h"
 #include "InventoryMenu.h"
-
-#define TILE_SIZE 16
-#define TILES_WIDTH 80
-#define TILES_HEIGH 40
 
 
 
@@ -27,17 +22,13 @@ int main()
 	GameState*		game = new GameState(window);
 	InventoryMenu*	inventory = new InventoryMenu(window);
 
-	stateMan.AddManagedState( inventory );
-	stateMan.AddManagedState( game );
 	stateMan.QueueStateChange( StateManager::ChangeType::Push, stateMan.AddManagedState( title ) );
-
-	MapGenerator * mg = new MapGenerator(TILES_WIDTH,TILES_HEIGH,150,75,25,30);
-	Map * map = mg->generateMap();
-	map->LoadSFTiles(TILE_SIZE);
+	stateMan.AddManagedState( game );
+	stateMan.AddManagedState( inventory );
 
 	while (window.isOpen())
 	{
-		tateMan.ProcessStateChange();
+		stateMan.ProcessStateChange();
 
 		sf::Event e;
 		while (window.pollEvent(e))
@@ -57,15 +48,6 @@ int main()
 				window.close();
 			}
 
-			if (e.type == sf::Event::MouseButtonPressed)
-			{
-				if(e.mouseButton.button == sf::Mouse::Right)
-				{
-					map = mg->generateMap();
-					map->LoadSFTiles(TILE_SIZE);
-				}
-			}
-
 			stateMan.HandleInput(e);
 			stateMan.Update(frameTime.asSeconds());
         }
@@ -73,17 +55,7 @@ int main()
 		frameTime = c.getElapsedTime();
 		c.restart();
 
-
-
         window.clear();
-		for(int x = 0; x < TILES_WIDTH; x++)
-		{
-			for(int y = 0; y < TILES_HEIGH; y++)
-			{
-				window.draw(map->GetSFTile(x, y));
-			}
-		}
-
 		stateMan.Render();
         window.display();
     }

@@ -21,7 +21,7 @@ void Map::LoadSFTiles(int tileSize)
 	{
 		for(int y = 0; y < ySize; y++)
 		{
-			sf::RectangleShape tile(sf::Vector2f(tileSize,tileSize));
+			sf::RectangleShape tile(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
 			tile.setPosition(x*tileSize, y*tileSize);
 
 			switch(GetTile(x, y))
@@ -136,6 +136,7 @@ bool  Map::IsAdjacentToTileType(int x, int y, Tile tileType)
 void  Map::testPrint()
 {
 	//Barrowed this code form roguebasin:
+	//Borrowed?  Well, just be sure to return it.
 		for (int y = 0; y < ySize; y++)
 		{
 			for (int x = 0; x < xSize; x++)

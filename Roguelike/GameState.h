@@ -1,5 +1,8 @@
 #pragma once
-#include "state.h"
+#include "State.h"
+
+class MapGenerator;
+class Map;
 
 class GameState :
 	public State
@@ -16,6 +19,6 @@ public:
 	virtual void Unpause(void);
 
 private:
-
-
+		MapGenerator *	m_mapGen;
+		Map*			m_map;
 };

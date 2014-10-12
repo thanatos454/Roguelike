@@ -21,7 +21,7 @@ MapGenerator::MapGenerator(int xSize, int ySize, int maxFeatures, int chanceRoom
 
 
 	if (seed == -1)
-		seed = time(0);
+		seed = static_cast<int>(time(0));
 
 	this->setSeed(seed);
 
