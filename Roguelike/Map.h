@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <SFML/Graphics.hpp>
 
 enum class Tile
 {
@@ -29,10 +30,12 @@ public:
 	bool IsAreaUnused(int xStart, int yStart, int xEnd, int yEnd);
 	bool IsAdjacentToTileType(int x, int y, Tile tileType);
 	void testPrint();
-
+	void LoadSFTiles(int tileSize);
+	sf::RectangleShape GetSFTile(int x, int y);
 private:
 	int xSize;
 	int ySize;
 	std::vector<Tile> data;
+	std::vector<sf::RectangleShape> sfTiles;
 
 };

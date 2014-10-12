@@ -4,6 +4,7 @@
 
 Map::Map(int x, int y):
 	data(x * y, Tile::Unused),
+	sfTiles(x * y),
 	xSize(x),
 	ySize(y)
 {
@@ -13,6 +14,52 @@ Map::Map(int x, int y):
 
 Map::~Map(){
 }
+
+void Map::LoadSFTiles(int tileSize)
+{
+	for(int x = 0; x < xSize; x++)
+	{
+		for(int y = 0; y < ySize; y++)
+		{
+			sf::RectangleShape tile(sf::Vector2f(tileSize,tileSize));
+			tile.setPosition(x*tileSize, y*tileSize);
+
+			switch(GetTile(x, y))
+				{
+				case Tile::Unused:	
+					tile.setFillColor(sf::Color::Black);
+					break;
+				case Tile::DirtWall:
+					tile.setFillColor(sf::Color::Red);
+					break;
+				case Tile::DirtFloor:
+					tile.setFillColor(sf::Color::Blue);
+					break;
+				case Tile::Corridor:
+					tile.setFillColor(sf::Color::Cyan);
+					break;
+				case Tile::Door:
+					tile.setFillColor(sf::Color::Magenta);
+					break;
+				case Tile::UpStairs:
+					tile.setFillColor(sf::Color::White);
+					break;
+				case Tile::DownStairs:
+					tile.setFillColor(sf::Color::Yellow);
+					break;
+				};
+
+			sfTiles[x + xSize * y] = tile;
+		}
+
+	}
+}
+
+sf::RectangleShape Map::GetSFTile(int x, int y)
+{
+	return sfTiles[x + xSize * y];
+}
+
 
 void Map::SetTile(int x, int y, Tile type)
 {
@@ -34,7 +81,6 @@ void Map::SetTiles(int xStart, int yStart, int xEnd, int yEnd, Tile cellType)
 		{
 			for (int x = xStart; x < xEnd + 1; ++x)
 			{
-				std::cout << x << std::endl;
 				this->SetTile(x, y, cellType);
 			}
 		}

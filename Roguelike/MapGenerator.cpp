@@ -101,7 +101,7 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 		map.SetTiles(xStart, yStart, xEnd, yEnd, Tile::DirtWall);
 		map.SetTiles(xStart + 1, yStart + 1, xEnd - 1, yEnd - 1, Tile::DirtFloor);
  
-		std::cout << "Room: ( " << xStart << ", " << yStart << " ) to ( " << xEnd << ", " << yEnd << " )" << std::endl;
+		//std::cout << "Room: ( " << xStart << ", " << yStart << " ) to ( " << xEnd << ", " << yEnd << " )" << std::endl;
  
 		return true;
 	}
