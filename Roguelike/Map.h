@@ -1,3 +1,5 @@
+#pragma once
+
 #include <vector>
 
 enum class Tile
@@ -20,6 +22,7 @@ public:
 	~Map();
 
 	void SetTile(int x, int y, Tile type);
+	void SetTiles(int xStart, int yStart, int xEnd, int yEnd, Tile cellType);
 	Tile GetTile(int x, int y);
 	bool IsInBoundsX(int x);
 	bool IsInBoundsY(int y);
