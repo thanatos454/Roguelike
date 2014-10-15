@@ -12,10 +12,10 @@ enum class Direction
 class MapGenerator
 {
 public:
-	MapGenerator(int xSize = 32, int ySize = 32, int maxFeatures = 150, int chanceRoom = 75, int chanceHall = 25, int seed = -1);
+	MapGenerator(int width = 32, int height = 32, int maxFeatures = 150, int chanceRoom = 75, int chanceHall = 25, int seed = -1);
 	~MapGenerator();
-	void setSeed(int seed);
-	int getSeed();
+	void SetSeed(int seed);
+	int GetSeed();
 
 	Map * generateMap();
 private:
@@ -29,11 +29,11 @@ private:
 	Direction GetRandomDirection();
 	int GetRandomInt(int min, int max);
 
-	int xSize;
-	int ySize;
-	int maxFeatures;
-	int chanceRoom;
-	int chanceHall;
-	int seed;
+	int m_width;
+	int m_height;
+	int m_maxFeatures;
+	int m_chanceRoom;
+	int m_chanceHall;
+	int m_seed;
 
 };

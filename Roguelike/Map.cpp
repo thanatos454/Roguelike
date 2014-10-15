@@ -1,75 +1,46 @@
 #include "Map.h"
 #include <cassert>
 #include <iostream>
+#include <SFML\Graphics.hpp>
 
-Map::Map(int x, int y):
-	data(x * y, Tile::Unused),
-	sfTiles(x * y),
-	xSize(x),
-	ySize(y)
+ std::vector<sf::RectangleShape> Map::s_tileset;
+
+Map::Map(int width, int height, int size) :
+	m_tileSize(size),
+	m_width(width),
+	m_height(height),
+	m_data(width * height, Tile::Unused)
 {
-	if (x <= y)
-		std::cout << "FU";
+	if( s_tileset.empty() )
+	{
+		GenerateTileset(size);
+	}
 }
 
 Map::~Map(){
 }
 
-void Map::LoadSFTiles(int tileSize)
+void Map::Render( sf::RenderWindow& target )
 {
-	for(int x = 0; x < xSize; x++)
+	for(int x = 0; x < m_width; x++)
 	{
-		for(int y = 0; y < ySize; y++)
+		for(int y = 0; y < m_height; y++)
 		{
-			sf::RectangleShape tile(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
-			tile.setPosition(x*tileSize, y*tileSize);
-
-			switch(GetTile(x, y))
-				{
-				case Tile::Unused:	
-					tile.setFillColor(sf::Color::Black);
-					break;
-				case Tile::DirtWall:
-					tile.setFillColor(sf::Color::Red);
-					break;
-				case Tile::DirtFloor:
-					tile.setFillColor(sf::Color::Blue);
-					break;
-				case Tile::Corridor:
-					tile.setFillColor(sf::Color::Cyan);
-					break;
-				case Tile::Door:
-					tile.setFillColor(sf::Color::Magenta);
-					break;
-				case Tile::UpStairs:
-					tile.setFillColor(sf::Color::White);
-					break;
-				case Tile::DownStairs:
-					tile.setFillColor(sf::Color::Yellow);
-					break;
-				};
-
-			sfTiles[x + xSize * y] = tile;
+			target.draw(GetTile(x, y));
 		}
-
 	}
 }
 
-sf::RectangleShape Map::GetSFTile(int x, int y)
-{
-	return sfTiles[x + xSize * y];
-}
-
-
 void Map::SetTile(int x, int y, Tile type)
 {
-	assert(this->IsInBoundsX(x));
-	assert(this->IsInBoundsY(y));
+	assert(IsInBoundsX(x));
+	assert(IsInBoundsY(y));
 
-	data[x + xSize * y] = type;
+	m_data[x + m_width * y] = type;
 }
 
-void Map::SetTiles(int xStart, int yStart, int xEnd, int yEnd, Tile cellType)
+//TODO: Change SetTiles to FillRect and change parameter names to left, top, right, and bottom
+void Map::SetTiles(int xStart, int yStart, int xEnd, int yEnd, Tile type)
 {
 	assert(IsInBoundsX(xStart) && IsInBoundsX(xEnd));
 	assert(IsInBoundsY(yStart) && IsInBoundsY(yEnd));
@@ -81,26 +52,26 @@ void Map::SetTiles(int xStart, int yStart, int xEnd, int yEnd, Tile cellType)
 		{
 			for (int x = xStart; x < xEnd + 1; ++x)
 			{
-				this->SetTile(x, y, cellType);
+				this->SetTile(x, y, type);
 			}
 		}
 }
 
-Tile Map::GetTile(int x, int y)
+Tile Map::GetTileTypeAt(int x, int y)
 {
-	assert(this->IsInBoundsX(x));
-	assert(this->IsInBoundsY(y));
+	assert(IsInBoundsX(x));
+	assert(IsInBoundsY(y));
 
-	return data[x + xSize * y];
+	return m_data[x + m_width * y];
 }
+
 bool  Map::IsInBoundsX(int x)
 {
-	return x >= 0 && x < xSize;
+	return x >= 0 && x < m_width;
 }
-
 bool  Map::IsInBoundsY(int y)
 {
-	return y >= 0 &&  y < ySize;
+	return y >= 0 &&  y < m_height;
 }
 bool  Map::IsAreaUnused(int xStart, int yStart, int xEnd, int yEnd)
 {
@@ -112,7 +83,7 @@ bool  Map::IsAreaUnused(int xStart, int yStart, int xEnd, int yEnd)
  
 			for (auto y = yStart; y != yEnd + 1; ++y)
 				for (auto x = xStart; x != xEnd + 1; ++x)
-					if (GetTile(x, y) != Tile::Unused)
+					if (GetTileTypeAt(x, y) != Tile::Unused)
 						return false;
  
 			return true;
@@ -122,34 +93,33 @@ bool  Map::IsAreaUnused(int xStart, int yStart, int xEnd, int yEnd)
 			return false;
 		}
 }
-
 bool  Map::IsAdjacentToTileType(int x, int y, Tile tileType)
 {
 	assert(IsInBoundsX(x - 1) && IsInBoundsX(x + 1));
 	assert(IsInBoundsY(y - 1) && IsInBoundsY(y + 1));
 
 		return 
-			GetTile(x - 1, y) == tileType || GetTile(x + 1, y) == tileType ||
-			GetTile(x, y - 1) == tileType || GetTile(x, y + 1) == tileType;
+			GetTileTypeAt(x - 1, y) == tileType || GetTileTypeAt(x + 1, y) == tileType ||
+			GetTileTypeAt(x, y - 1) == tileType || GetTileTypeAt(x, y + 1) == tileType;
 }
 
-void  Map::testPrint()
+void  Map::TestPrint()
 {
 	//Barrowed this code form roguebasin:
-	//Borrowed?  Well, just be sure to return it.
-		for (int y = 0; y < ySize; y++)
+	//Borrowed?  Well, just be sure to return it. :P
+		for (int y = 0; y < m_height; y++)
 		{
-			for (int x = 0; x < xSize; x++)
+			for (int x = 0; x < m_width; x++)
 			{
-				switch(GetTile(x, y))
+				switch(GetTileTypeAt(x, y))
 				{
 				case Tile::Unused:
 					std::cout << " ";
 					break;
-				case Tile::DirtWall:
+				case Tile::Wall:
 					std::cout << "#";
 					break;
-				case Tile::DirtFloor:
+				case Tile::Floor:
 					std::cout << ".";
 					break;
 				case Tile::Corridor:
@@ -166,10 +136,42 @@ void  Map::testPrint()
 					break;
 				};
 			}
- 
-			std::cout << std::endl;
+ 			std::cout << std::endl;
 		}
- 
 		std::cout << std::endl;
 
+}
+
+sf::RectangleShape& Map::GetTile(int x, int y)
+{
+	sf::RectangleShape& tile = s_tileset[static_cast<int>(m_data[x + m_width * y])];
+	tile.setPosition( x*m_tileSize, y*m_tileSize );
+
+	return tile;
+}
+
+void Map::GenerateTileset(int tileSize)
+{
+	s_tileset.resize(static_cast<int>(Tile::Count));
+	//case Tile::Unused:	
+	s_tileset[0].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[0].setFillColor(sf::Color::Black);
+	//case Tile::Wall:
+	s_tileset[1].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[1].setFillColor(sf::Color::Red);
+	//case Tile::Floor:
+	s_tileset[2].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[2].setFillColor(sf::Color::Blue);
+	//case Tile::Corridor:
+	s_tileset[3].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[3].setFillColor(sf::Color::Cyan);
+	//case Tile::Door:
+	s_tileset[4].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[4].setFillColor(sf::Color::Magenta);
+	//case Tile::UpStairs:
+	s_tileset[5].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[5].setFillColor(sf::Color::White);
+	//case Tile::DownStairs:
+	s_tileset[6].setSize(sf::Vector2f(static_cast<float>(tileSize),static_cast<float>(tileSize)));
+	s_tileset[6].setFillColor(sf::Color::Yellow);
 }

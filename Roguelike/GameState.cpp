@@ -15,7 +15,7 @@ GameState::GameState( sf::RenderWindow& window ) : State(window, "GameState"), m
 {
 
 	m_map = m_mapGen->generateMap();
-	m_map->LoadSFTiles(TILE_SIZE);
+	//m_map->GenerateTileset(TILE_SIZE);
 }
 
 
@@ -40,7 +40,7 @@ void GameState::HandleInput(const sf::Event& e)
 	{
 		delete m_map;
 		m_map = m_mapGen->generateMap();
-		m_map->LoadSFTiles(TILE_SIZE);
+		//m_map->GenerateTileset(TILE_SIZE);
 	}
 }
 void GameState::Update(float dTime)
@@ -48,13 +48,7 @@ void GameState::Update(float dTime)
 }
 void GameState::Render(void)
 {
-	for(int x = 0; x < TILES_WIDTH; x++)
-	{
-		for(int y = 0; y < TILES_HEIGH; y++)
-		{
-			m_window.draw(m_map->GetSFTile(x, y));
-		}
-	}
+	m_map->Render(m_window);
 }
 
 void GameState::Pause(void)
