@@ -10,23 +10,13 @@
 //  m_width & height are the number of tiles
 //  Set seed to -1 for a random map.
 //////////
-MapGenerator::MapGenerator(int width, int height
-						   , int maxFeatures, int chanceRoom, int chanceHall, int seed)
+MapGenerator::MapGenerator(int maxFeatures, int chanceRoom, int chanceHall, int seed)
+	: m_maxFeatures(maxFeatures), m_chanceRoom(chanceRoom), m_chanceHall(chanceHall)
 {
-	this->m_width = width;
-	this->m_height = height;
-	this->m_maxFeatures = maxFeatures;
-	this->m_chanceRoom = chanceRoom;
-	this->m_chanceHall = chanceHall;
-
-
-
 	if (seed == -1)
 		seed = static_cast<int>(time(0));
 
-	this->SetSeed(seed);
-
-
+	SetSeed(seed);
 }
 
 MapGenerator::~MapGenerator()
@@ -36,74 +26,86 @@ MapGenerator::~MapGenerator()
 
 int MapGenerator::GetSeed()
 {
-	return this->m_seed;
+	return m_seed;
 }
 void MapGenerator::SetSeed(int seed)
 {
-	this->m_seed = seed;
+	m_seed = seed;
 	srand(seed);
 }
 
-//TODO: Change GenerateMap to "Generate( Map& m )" and don't save map width/height in mapgenerator, use the width/height contained by Map
-Map * MapGenerator::generateMap()
+void MapGenerator::Generate( Map& map )
 {
-	assert(m_maxFeatures > 0);
-	assert(m_width > 3 );
-	assert(m_height > 3);
+	//Clears out old map contents.
+	map.FillRect(0,0,map.m_width-1, map.m_height-1, Map::Tile::Unused);
 
-	Map * map = new Map(m_width, m_height);
+	//Dig out a single room in the centre of the map
+	MakeRoom(map, map.m_width / 2, map.m_height / 2, 8, 8, GetRandomDirection());
 
-	MakeMap(*map);
-	return map;
+	
+		for (auto features = 1; features < m_maxFeatures; ++features)
+		{
+			if (!MakeFeature(map))
+			{
+				std::cout << "Unable to place more features (placed " << features << ")." << std::endl;
+				break;
+			}
+		}
+ 
+		if (!MakeStairs(map, Map::Tile::UpStairs))
+			std::cout << "Unable to place up stairs." << std::endl;
+ 
+		if (!MakeStairs(map, Map::Tile::DownStairs))
+			std::cout << "Unable to place down stairs." << std::endl;
 }
 
-bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLength, Direction direction)
+bool MapGenerator::MakeRoom(Map& map, int x, int y, int maxWidth, int maxHeight, Direction direction)
 	{
 		// Minimum room size of 4x4 tiles (2x2 for walking on, the rest is walls)
-		auto xLength = GetRandomInt(4, xMaxLength);
-		auto yLength = GetRandomInt(4, yMaxLength);
+		auto w = GetRandomInt(4, maxWidth);
+		auto h = GetRandomInt(4, maxHeight);
  
-		auto xStart = x;
-		auto yStart = y;
+		auto left = x;
+		auto top = y;
  
-		auto xEnd = x;
-		auto yEnd = y;
+		auto right = x;
+		auto bottom = y;
  
 		if (direction == Direction::North)
 		{
-			yStart = y - yLength;
-			xStart = x - xLength / 2;
-			xEnd = x + (xLength + 1) / 2;
+			top = y - h;
+			left = x - w / 2;
+			right = x + (w + 1) / 2;
 		}
 		else if (direction == Direction::East)
 		{
-			yStart = y - yLength / 2;
-			yEnd = y + (yLength + 1) / 2;
-			xEnd = x + xLength;
+			top = y - h / 2;
+			bottom = y + (h + 1) / 2;
+			right = x + w;
 		}
 		else if (direction == Direction::South)
 		{
-			yEnd = y + yLength;
-			xStart = x - xLength / 2;
-			xEnd = x + (xLength + 1) / 2;
+			bottom = y + h;
+			left = x - w / 2;
+			right = x + (w + 1) / 2;
 		}
 		else if (direction == Direction::West)
 		{
-			yStart = y - yLength / 2;
-			yEnd = y + (yLength + 1) / 2;
-			xStart = x - xLength;
+			top = y - h / 2;
+			bottom = y + (h + 1) / 2;
+			left = x - w;
 		}
  
-		if (!map.IsInBoundsX(xStart) || !map.IsInBoundsX(xEnd) || !map.IsInBoundsY(yStart) || !map.IsInBoundsY(yEnd))
+		if (!map.IsInBoundsX(left) || !map.IsInBoundsX(right) || !map.IsInBoundsY(top) || !map.IsInBoundsY(bottom))
 			return false;
  
-		if (!map.IsAreaUnused(xStart, yStart, xEnd, yEnd))
+		if (!map.IsAreaUnused(left, top, right, bottom))
 			return false;
  
-		map.SetTiles(xStart, yStart, xEnd, yEnd, Tile::Wall);
-		map.SetTiles(xStart + 1, yStart + 1, xEnd - 1, yEnd - 1, Tile::Floor);
+		map.FillRect(left, top, right, bottom, Map::Tile::Wall);
+		map.FillRect(left + 1, top + 1, right - 1, bottom - 1, Map::Tile::Floor);
  
-		//std::cout << "Room: ( " << xStart << ", " << yStart << " ) to ( " << xEnd << ", " << yEnd << " )" << std::endl;
+		//std::cout << "Room: ( " << left << ", " << top << " ) to ( " << right << ", " << bottom << " )" << std::endl;
  
 		return true;
 	}
@@ -120,31 +122,31 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 			// Find a direction from which it's reachable.
 			// Attempt to make a feature (room or corridor) starting at this point.
  
-			int x = GetRandomInt(1, m_width - 2);
-			int y = GetRandomInt(1, m_height - 2);
+			int x = GetRandomInt(1, map.m_width - 2);
+			int y = GetRandomInt(1, map.m_height - 2);
  
-			if (map.GetTileTypeAt(x, y) != Tile::Wall && map.GetTileTypeAt(x, y) != Tile::Corridor)
+			if (map.GetTileTypeAt(x, y) != Map::Tile::Wall && map.GetTileTypeAt(x, y) != Map::Tile::Corridor)
 				continue;
  
-			if (map.IsAdjacentToTileType(x, y, Tile::Door))
+			if (map.IsAdjacentToTileType(x, y, Map::Tile::Door))
 				continue;
  
-			if (map.GetTileTypeAt(x, y+1) == Tile::Floor || map.GetTileTypeAt(x, y+1) == Tile::Corridor)
+			if (map.GetTileTypeAt(x, y+1) == Map::Tile::Floor || map.GetTileTypeAt(x, y+1) == Map::Tile::Corridor)
 			{
 				if (MakeFeature(map, x, y, 0, -1, Direction::North))
 					return true;
 			}
-			else if (map.GetTileTypeAt(x-1, y) == Tile::Floor || map.GetTileTypeAt(x-1, y) == Tile::Corridor)
+			else if (map.GetTileTypeAt(x-1, y) == Map::Tile::Floor || map.GetTileTypeAt(x-1, y) == Map::Tile::Corridor)
 			{
 				if (MakeFeature(map, x, y, 1, 0, Direction::East))
 					return true;
 			}
-			else if (map.GetTileTypeAt(x, y-1) == Tile::Floor || map.GetTileTypeAt(x, y-1) == Tile::Corridor)
+			else if (map.GetTileTypeAt(x, y-1) == Map::Tile::Floor || map.GetTileTypeAt(x, y-1) == Map::Tile::Corridor)
 			{
 				if (MakeFeature(map, x, y, 0, 1, Direction::South))
 					return true;
 			}
-			else if (map.GetTileTypeAt(x+1, y) == Tile::Floor || map.GetTileTypeAt(x+1, y) == Tile::Corridor)
+			else if (map.GetTileTypeAt(x+1, y) == Map::Tile::Floor || map.GetTileTypeAt(x+1, y) == Map::Tile::Corridor)
 			{
 				if (MakeFeature(map, x, y, -1, 0, Direction::West))
 					return true;
@@ -154,7 +156,7 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 		return false;
 	}
 
-		bool MapGenerator::MakeFeature(Map& map, int x, int y, int xmod, int ymod, Direction direction)
+	bool MapGenerator::MakeFeature(Map& map, int x, int y, int xmod, int ymod, Direction direction)
 	{
 		// Choose what to build
 		auto chance = GetRandomInt(0, 100);
@@ -163,10 +165,10 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 		{
 			if (MakeRoom(map, x + xmod, y + ymod, 8, 6, direction))
 			{
-				map.SetTile(x, y, Tile::Door);
+				map.SetTile(x, y, Map::Tile::Door);
  
 				// Remove wall next to the door.
-				map.SetTile(x + xmod, y + ymod, Tile::Floor);
+				map.SetTile(x + xmod, y + ymod, Map::Tile::Floor);
  
 				return true;
 			}
@@ -177,7 +179,7 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 		{
 			if (MakeCorridor(map, x + xmod, y + ymod, 6, direction))
 			{
-				map.SetTile(x, y, Tile::Door);
+				map.SetTile(x, y, Map::Tile::Door);
  
 				return true;
 			}
@@ -188,37 +190,37 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 
 	bool MapGenerator::MakeCorridor(Map& map, int x, int y, int maxLength, Direction direction) 
 	{
-		assert(x >= 0 && x < m_width);
-		assert(y >= 0 && y < m_height);
+		assert(x >= 0 && x < map.m_width);
+		assert(y >= 0 && y < map.m_height);
  
-		assert(maxLength > 0 && maxLength <= std::max(m_width, m_height));
+		assert(maxLength > 0 && maxLength <= std::max(map.m_width, map.m_height));
  
 		auto length = GetRandomInt(2, maxLength);
  
-		auto xStart = x;
-		auto yStart = y;
+		auto left = x;
+		auto top = y;
  
-		auto xEnd = x;
-		auto yEnd = y;
+		auto right = x;
+		auto bottom = y;
  
 		if (direction == Direction::North)
-			yStart = y - length;
+			top = y - length;
 		else if (direction == Direction::East)
-			xEnd = x + length;
+			right = x + length;
 		else if (direction == Direction::South)
-			yEnd = y + length;
+			bottom = y + length;
 		else if (direction == Direction::West)
-			xStart = x - length;
+			left = x - length;
  
-		if (!map.IsInBoundsX(xStart) || !map.IsInBoundsX(xEnd) || !map.IsInBoundsY(yStart) || !map.IsInBoundsY(yEnd))
+		if (!map.IsInBoundsX(left) || !map.IsInBoundsX(right) || !map.IsInBoundsY(top) || !map.IsInBoundsY(bottom))
 			return false;
  
-		if (!map.IsAreaUnused(xStart, yStart, xEnd, yEnd))
+		if (!map.IsAreaUnused(left, top, right, bottom))
 			return false;
  
-		map.SetTiles(xStart, yStart, xEnd, yEnd, Tile::Corridor);
+		map.FillRect(left, top, right, bottom, Map::Tile::Corridor);
  
-		//std::cout << "Corridor: ( " << xStart << ", " << yStart << " ) to ( " << xEnd << ", " << yEnd << " )" << std::endl;
+		//std::cout << "Corridor: ( " << left << ", " << top << " ) to ( " << right << ", " << bottom << " )" << std::endl;
  
 		return true;
 	}
@@ -226,7 +228,7 @@ bool MapGenerator::MakeRoom(Map& map, int x, int y, int xMaxLength, int yMaxLeng
 bool MapGenerator::MakeMap(Map & map)
 {
 	//Dig out a single room in the centre of the map
-	MakeRoom(map, m_width / 2, m_height / 2, 8, 8, GetRandomDirection());
+	MakeRoom(map, map.m_width / 2, map.m_height / 2, 8, 8, GetRandomDirection());
 
 	
 			for (auto features = 1; features < m_maxFeatures; ++features)
@@ -238,29 +240,29 @@ bool MapGenerator::MakeMap(Map & map)
 			}
 		}
  
-		if (!MakeStairs(map, Tile::UpStairs))
+		if (!MakeStairs(map, Map::Tile::UpStairs))
 			std::cout << "Unable to place up stairs." << std::endl;
  
-		if (!MakeStairs(map, Tile::DownStairs))
+		if (!MakeStairs(map, Map::Tile::DownStairs))
 			std::cout << "Unable to place down stairs." << std::endl;
 	
 		return true;
 }
 
-	bool MapGenerator::MakeStairs(Map& map, Tile tile)
+	bool MapGenerator::MakeStairs(Map& map, Map::Tile tile)
 	{
 		auto tries = 0;
 		auto maxTries = 10000;
  
 		for ( ; tries != maxTries; ++tries)
 		{
-			int x = GetRandomInt( 1, m_width - 2);
-			int y = GetRandomInt( 1, m_height - 2);
+			int x = GetRandomInt( 1, map.m_width - 2);
+			int y = GetRandomInt( 1, map.m_height - 2);
  
-			if (!map.IsAdjacentToTileType(x, y, Tile::Floor) && !map.IsAdjacentToTileType (x, y, Tile::Corridor))
+			if (!map.IsAdjacentToTileType(x, y, Map::Tile::Floor) && !map.IsAdjacentToTileType (x, y, Map::Tile::Corridor))
 				continue;
  
-			if (map.IsAdjacentToTileType(x, y, Tile::Door))
+			if (map.IsAdjacentToTileType(x, y, Map::Tile::Door))
 				continue;
  
 			map.SetTile(x, y, tile);
@@ -271,7 +273,7 @@ bool MapGenerator::MakeMap(Map & map)
 		return false;
 	}
 
-	Direction MapGenerator::GetRandomDirection()
+	MapGenerator::Direction MapGenerator::GetRandomDirection()
 	{
 		return Direction(rand() % 4);
 	}

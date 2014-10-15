@@ -7,15 +7,13 @@
 #include "MapGenerator.h"
 
 #define TILE_SIZE 16
-#define TILES_WIDTH 80
-#define TILES_HEIGH 40
+#define MAP_WIDTH 64
+#define MAP_HEIGHT 48
 
 
-GameState::GameState( sf::RenderWindow& window ) : State(window, "GameState"), m_mapGen(new MapGenerator(TILES_WIDTH,TILES_HEIGH,150,75,25,30))
+GameState::GameState( sf::RenderWindow& window ) : State(window, "GameState"), m_map(new Map(MAP_WIDTH, MAP_HEIGHT, TILE_SIZE)), m_mapGen(new MapGenerator(150,75,25,30))
 {
-
-	m_map = m_mapGen->generateMap();
-	//m_map->GenerateTileset(TILE_SIZE);
+	m_mapGen->Generate(*m_map);
 }
 
 
@@ -38,9 +36,7 @@ void GameState::HandleInput(const sf::Event& e)
 	if( (e.type == sf::Event::MouseButtonPressed) &&
 	(e.mouseButton.button == sf::Mouse::Right) )
 	{
-		delete m_map;
-		m_map = m_mapGen->generateMap();
-		//m_map->GenerateTileset(TILE_SIZE);
+		m_mapGen->Generate(*m_map);
 	}
 }
 void GameState::Update(float dTime)

@@ -3,7 +3,7 @@
 #include <iostream>
 #include <SFML\Graphics.hpp>
 
- std::vector<sf::RectangleShape> Map::s_tileset;
+std::vector<sf::RectangleShape> Map::s_tileset;
 
 Map::Map(int width, int height, int size) :
 	m_tileSize(size),
@@ -31,7 +31,7 @@ void Map::Render( sf::RenderWindow& target )
 	}
 }
 
-void Map::SetTile(int x, int y, Tile type)
+void Map::SetTile(int x, int y, Map::Tile type)
 {
 	assert(IsInBoundsX(x));
 	assert(IsInBoundsY(y));
@@ -39,25 +39,24 @@ void Map::SetTile(int x, int y, Tile type)
 	m_data[x + m_width * y] = type;
 }
 
-//TODO: Change SetTiles to FillRect and change parameter names to left, top, right, and bottom
-void Map::SetTiles(int xStart, int yStart, int xEnd, int yEnd, Tile type)
+void Map::FillRect(int left, int top, int right, int bottom, Tile type)
 {
-	assert(IsInBoundsX(xStart) && IsInBoundsX(xEnd));
-	assert(IsInBoundsY(yStart) && IsInBoundsY(yEnd));
+	assert(IsInBoundsX(left) && IsInBoundsX(right));
+	assert(IsInBoundsY(top) && IsInBoundsY(bottom));
  
-	assert(xStart <= xEnd);
-	assert(yStart <= yEnd);
+	assert(left <= right);
+	assert(top <= bottom);
  
-		for (int y = yStart; y < yEnd + 1; ++y)
+		for (int y = top; y < bottom + 1; ++y)
 		{
-			for (int x = xStart; x < xEnd + 1; ++x)
+			for (int x = left; x < right + 1; ++x)
 			{
 				this->SetTile(x, y, type);
 			}
 		}
 }
 
-Tile Map::GetTileTypeAt(int x, int y)
+Map::Tile Map::GetTileTypeAt(int x, int y)
 {
 	assert(IsInBoundsX(x));
 	assert(IsInBoundsY(y));
@@ -73,16 +72,16 @@ bool  Map::IsInBoundsY(int y)
 {
 	return y >= 0 &&  y < m_height;
 }
-bool  Map::IsAreaUnused(int xStart, int yStart, int xEnd, int yEnd)
+bool  Map::IsAreaUnused(int left, int top, int right, int bottom)
 {
-		if(IsInBoundsX(xStart) && IsInBoundsX(xEnd) && IsInBoundsY(yStart) && IsInBoundsY(yEnd))
+		if(IsInBoundsX(left) && IsInBoundsX(right) && IsInBoundsY(top) && IsInBoundsY(bottom))
 		{
  
-			assert(xStart <= xEnd);
-			assert(yStart <= yEnd);
+			assert(left <= right);
+			assert(top <= bottom);
  
-			for (auto y = yStart; y != yEnd + 1; ++y)
-				for (auto x = xStart; x != xEnd + 1; ++x)
+			for (auto y = top; y != bottom + 1; ++y)
+				for (auto x = left; x != right + 1; ++x)
 					if (GetTileTypeAt(x, y) != Tile::Unused)
 						return false;
  
